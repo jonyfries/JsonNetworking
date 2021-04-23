@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonNetworking", "JsonNetworking\JsonNetworking.csproj", "{0C7F923B-90E1-4B01-84AE-7D79B76B77BD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "JsonNetworking", "JsonNetworking\JsonNetworking.csproj", "{AAFC964A-9E4F-4DB0-9A21-690D0D88F798}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,15 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0C7F923B-90E1-4B01-84AE-7D79B76B77BD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0C7F923B-90E1-4B01-84AE-7D79B76B77BD}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0C7F923B-90E1-4B01-84AE-7D79B76B77BD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0C7F923B-90E1-4B01-84AE-7D79B76B77BD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AAFC964A-9E4F-4DB0-9A21-690D0D88F798}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AAFC964A-9E4F-4DB0-9A21-690D0D88F798}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AAFC964A-9E4F-4DB0-9A21-690D0D88F798}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AAFC964A-9E4F-4DB0-9A21-690D0D88F798}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {1D1A173D-B1D5-4C15-80FF-0E3964A78F39}
+		SolutionGuid = {8F537123-F03E-4361-9F0D-77E299B3879D}
 	EndGlobalSection
 EndGlobal

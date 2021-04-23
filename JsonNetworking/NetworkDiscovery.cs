@@ -9,17 +9,27 @@ using System.Threading.Tasks;
 
 namespace JsonNetworking
 {
-    public class NetworkDiscovery_Listener
+    public class MessageEventArgs : EventArgs
     {
-        public bool listenForBroadcast = false;
+        NetworkMessage message;
 
-        public void StartListenForBroadcast(NetworkMessage serverData)
+        public MessageEventArgs(NetworkMessage networkMessage)
+        {
+            message = networkMessage;
+        }
+    }
+
+    public static class NetworkDiscovery_Listener
+    {
+        public static bool listenForBroadcast = false;
+
+        public static void StartListenForBroadcast(NetworkMessage serverData)
         {
             listenForBroadcast = true;
             Task.Run(() => ListenForBroadcast(serverData));
         }
 
-        private void ListenForBroadcast(NetworkMessage serverData)
+        private static void ListenForBroadcast(NetworkMessage serverData)
         {
             UdpClient udp = new UdpClient(Constants.BROADCAST_PORT);
 
@@ -54,6 +64,12 @@ namespace JsonNetworking
 
     public class NetworkDiscovery_Sender
     {
+        public delegate void OnMessageReceived(NetworkDiscovery_Sender search, MessageEventArgs message);
+        public event OnMessageReceived MessageReceived;
+
+        public delegate void OnMessageSent(NetworkDiscovery_Sender search, MessageEventArgs args);
+        public event OnMessageSent MessageSent;
+
         public bool sendBroadcast = true;
 
         public void StartBroadcastForServer(NetworkMessage serverData)
@@ -70,6 +86,8 @@ namespace JsonNetworking
                 udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
                 var data = broadcastMessage.ToBytes();
                 udpClient.Send(data, data.Length, IPAddress.Broadcast.ToString(), Constants.BROADCAST_PORT);
+
+                MessageSent?.Invoke(this, new MessageEventArgs(broadcastMessage));
 
                 Thread.Sleep(5000);
             }
