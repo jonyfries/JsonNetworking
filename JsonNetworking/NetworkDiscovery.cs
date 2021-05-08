@@ -9,27 +9,20 @@ using System.Threading.Tasks;
 
 namespace JsonNetworking
 {
-    public class MessageEventArgs : EventArgs
+    public class NetworkDiscovery_Listener
     {
-        NetworkMessage message;
+        public event MessageDelegate MessageSent;
+        public event MessageDelegate MessageReceived;
 
-        public MessageEventArgs(NetworkMessage networkMessage)
-        {
-            message = networkMessage;
-        }
-    }
+        public bool listenForBroadcast = false;
 
-    public static class NetworkDiscovery_Listener
-    {
-        public static bool listenForBroadcast = false;
-
-        public static void StartListenForBroadcast(NetworkMessage serverData)
+        public void StartListenForBroadcast(NetworkMessage serverData)
         {
             listenForBroadcast = true;
             Task.Run(() => ListenForBroadcast(serverData));
         }
 
-        private static void ListenForBroadcast(NetworkMessage serverData)
+        private void ListenForBroadcast(NetworkMessage serverData)
         {
             UdpClient udp = new UdpClient(Constants.BROADCAST_PORT);
 
@@ -37,26 +30,31 @@ namespace JsonNetworking
             {
                 IPEndPoint ip = null;
                 byte[] bytes;
-                string message = "";
+                string messageJson = "";
 
                 while (true)
                 {
                     bytes = udp.Receive(ref ip);
-                    message += Constants.MESSAGE_ENCODING.GetString(bytes);
-                    if (message.IndexOf(Constants.EOF) > -1)
+                    messageJson += Constants.MESSAGE_ENCODING.GetString(bytes);
+                    if (messageJson.IndexOf(Constants.EOF) > -1)
                     {
                         break;
                     }
                 }
-                message = message.Substring(0, message.LastIndexOf(Constants.EOF));
+                messageJson = messageJson.Substring(0, messageJson.LastIndexOf(Constants.EOF));
 
-                if (NetworkMessage.Deserialize(message).IsMessageType(NetworkMessage.ServerSearch))
+                NetworkMessage clientMessage = NetworkMessage.Deserialize(messageJson);
+                MessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
+
+                if (clientMessage.IsMessageType(NetworkMessage.ServerSearch))
                 {
                     bytes = serverData.ToBytes();
                     var client = new UdpClient();
                     IPEndPoint ep = new IPEndPoint(ip.Address, Constants.BROADCAST_RESPONSE_PORT);
                     client.Connect(ep);
                     client.Send(bytes, bytes.Length);
+
+                    MessageSent?.Invoke(this, new MessageEventArgs(serverData));
                 }
             }
         }
@@ -64,11 +62,8 @@ namespace JsonNetworking
 
     public class NetworkDiscovery_Sender
     {
-        public delegate void OnMessageReceived(NetworkDiscovery_Sender search, MessageEventArgs message);
-        public event OnMessageReceived MessageReceived;
-
-        public delegate void OnMessageSent(NetworkDiscovery_Sender search, MessageEventArgs args);
-        public event OnMessageSent MessageSent;
+        public event MessageDelegate MessageSent;
+        public event MessageDelegate MessageReceived;
 
         public bool sendBroadcast = true;
 
