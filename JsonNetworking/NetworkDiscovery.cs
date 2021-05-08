@@ -75,10 +75,11 @@ namespace JsonNetworking
 
         private void BroadcastForServer(NetworkMessage broadcastMessage)
         {
+            UdpClient udpClient = new UdpClient();
+            udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
+
             while (sendBroadcast)
             {
-                UdpClient udpClient = new UdpClient();
-                udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
                 var data = broadcastMessage.ToBytes();
                 udpClient.Send(data, data.Length, IPAddress.Broadcast.ToString(), Constants.BROADCAST_PORT);
 
