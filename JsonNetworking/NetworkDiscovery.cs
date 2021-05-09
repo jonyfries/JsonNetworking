@@ -46,6 +46,8 @@ namespace JsonNetworking
                 NetworkMessage clientMessage = NetworkMessage.Deserialize(messageJson);
                 MessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
 
+                serverData.SenderIp = Utility.GetLocalIp();
+
                 if (clientMessage.IsMessageType(NetworkMessage.ServerSearch))
                 {
                     bytes = serverData.ToBytes();
@@ -75,6 +77,8 @@ namespace JsonNetworking
 
         private void BroadcastForServer(NetworkMessage broadcastMessage)
         {
+            broadcastMessage.SenderIp = Utility.GetLocalIp();
+
             UdpClient udpClient = new UdpClient();
             udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
 
