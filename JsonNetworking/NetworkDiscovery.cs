@@ -44,9 +44,8 @@ namespace JsonNetworking
                 messageJson = messageJson.Substring(0, messageJson.LastIndexOf(Constants.EOF));
 
                 NetworkMessage clientMessage = NetworkMessage.Deserialize(messageJson);
+                clientMessage.SenderIp = ip.Address.ToString();
                 MessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
-
-                serverData.SenderIp = Utility.GetLocalIp();
 
                 if (clientMessage.IsMessageType(NetworkMessage.ServerSearch))
                 {
@@ -67,18 +66,29 @@ namespace JsonNetworking
         public event MessageDelegate MessageSent;
         public event MessageDelegate MessageReceived;
 
+        private object lockObject = new object();
+
+        private List<DiscoveredServer> activeServers = new List<DiscoveredServer>();
+        public List<DiscoveredServer> ActiveServers
+        {
+            get
+            {
+                lock (lockObject) { return new List<DiscoveredServer>(activeServers); }
+            }
+        }
         public bool sendBroadcast = true;
+        public TimeSpan BroadcastPause { get; set; } = new TimeSpan(0,0,1);
 
         public void StartBroadcastForServer(NetworkMessage serverData)
         {
             sendBroadcast = true;
             Task.Run(() => BroadcastForServer(serverData));
+            Task.Run(() => ListenForResponse());
+            Task.Run(() => MaintainServerList());
         }
 
         private void BroadcastForServer(NetworkMessage broadcastMessage)
         {
-            broadcastMessage.SenderIp = Utility.GetLocalIp();
-
             UdpClient udpClient = new UdpClient();
             udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
 
@@ -89,8 +99,91 @@ namespace JsonNetworking
 
                 MessageSent?.Invoke(this, new MessageEventArgs(broadcastMessage));
 
-                Thread.Sleep(5000);
+                Thread.Sleep(BroadcastPause);
             }
+        }
+
+        private void ListenForResponse()
+        {
+            UdpClient udp = new UdpClient(Constants.BROADCAST_RESPONSE_PORT);
+
+            while (sendBroadcast)
+            {
+                IPEndPoint ip = null;
+                byte[] bytes;
+                string messageJson = "";
+
+                while (true)
+                {
+                    bytes = udp.Receive(ref ip);
+                    messageJson += Constants.MESSAGE_ENCODING.GetString(bytes);
+                    if (messageJson.IndexOf(Constants.EOF) > -1)
+                    {
+                        break;
+                    }
+                }
+                messageJson = messageJson.Substring(0, messageJson.LastIndexOf(Constants.EOF));
+
+                NetworkMessage serverMessage = NetworkMessage.Deserialize(messageJson);
+                serverMessage.SenderIp = ip.Address.ToString();
+                MessageReceived?.Invoke(this, new MessageEventArgs(serverMessage));
+            }
+        }
+
+        private void MaintainServerList()
+        {
+            MessageReceived += NetworkDiscovery_Sender_MessageReceived;
+            while (sendBroadcast)
+            {
+                lock (lockObject)
+                {
+                    for (int i = 0; i < activeServers.Count; ++i)
+                    {
+                        if ((DateTime.Now - activeServers[i].LastActiveTime).TotalMilliseconds > BroadcastPause.TotalMilliseconds * 2)
+                        {
+                            activeServers.RemoveAt(i--);
+                        }
+                    }
+                }
+
+                Thread.Sleep((int)BroadcastPause.TotalMilliseconds / 2);
+            }
+            MessageReceived -= NetworkDiscovery_Sender_MessageReceived;
+        }
+
+        private void NetworkDiscovery_Sender_MessageReceived(object search, MessageEventArgs message)
+        {
+            lock (lockObject)
+            {
+                for (int i = 0; i < activeServers.Count; ++i)
+                {
+                    if (activeServers[i].Ip == message.message.SenderIp)
+                    {
+                        activeServers[i].LastActiveTime = message.message.ReceivedTime;
+                        return;
+                    }
+                }
+
+                activeServers.Add(new DiscoveredServer(message));
+            }
+        }
+    }
+
+    public class DiscoveredServer
+    {
+        public string Detail { get; set; }
+        public string Name { get; set; }
+        public string Ip { get; set; }
+        public string Guid { get; set; }
+        public DateTime LastActiveTime { get; set; }
+
+        internal DiscoveredServer(MessageEventArgs message)
+        {
+            Detail = message.message.Detail;
+            Name = message.message.SenderName;
+            Ip = message.message.SenderIp;
+            Guid = message.message.SenderGuid;
+            LastActiveTime = message.message.ReceivedTime;
         }
     }
 }
