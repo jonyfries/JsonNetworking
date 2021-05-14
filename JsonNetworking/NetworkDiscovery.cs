@@ -66,6 +66,8 @@ namespace JsonNetworking
         public event MessageDelegate MessageSent;
         public event MessageDelegate MessageReceived;
 
+        UdpClient broadcastUdp;
+        UdpClient listenUdp;
         private object lockObject = new object();
 
         private List<DiscoveredServer> activeServers = new List<DiscoveredServer>();
@@ -89,13 +91,13 @@ namespace JsonNetworking
 
         private void BroadcastForServer(NetworkMessage broadcastMessage)
         {
-            UdpClient udpClient = new UdpClient();
-            udpClient.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
+            broadcastUdp = new UdpClient();
+            broadcastUdp.Client.Bind(new IPEndPoint(IPAddress.Any, Constants.BROADCAST_PORT));
 
             while (sendBroadcast)
             {
                 var data = broadcastMessage.ToBytes();
-                udpClient.Send(data, data.Length, IPAddress.Broadcast.ToString(), Constants.BROADCAST_PORT);
+                broadcastUdp.Send(data, data.Length, IPAddress.Broadcast.ToString(), Constants.BROADCAST_PORT);
 
                 MessageSent?.Invoke(this, new MessageEventArgs(broadcastMessage));
 
@@ -105,7 +107,7 @@ namespace JsonNetworking
 
         private void ListenForResponse()
         {
-            UdpClient udp = new UdpClient(Constants.BROADCAST_RESPONSE_PORT);
+            listenUdp = new UdpClient(Constants.BROADCAST_RESPONSE_PORT);
 
             while (sendBroadcast)
             {
@@ -115,7 +117,7 @@ namespace JsonNetworking
 
                 while (true)
                 {
-                    bytes = udp.Receive(ref ip);
+                    bytes = listenUdp.Receive(ref ip);
                     messageJson += Constants.MESSAGE_ENCODING.GetString(bytes);
                     if (messageJson.IndexOf(Constants.EOF) > -1)
                     {
@@ -148,6 +150,7 @@ namespace JsonNetworking
 
                 Thread.Sleep((int)BroadcastPause.TotalMilliseconds / 2);
             }
+            activeServers.Clear();
             MessageReceived -= NetworkDiscovery_Sender_MessageReceived;
         }
 
@@ -166,6 +169,13 @@ namespace JsonNetworking
 
                 activeServers.Add(new DiscoveredServer(message));
             }
+        }
+
+        public void StopBroadcast()
+        {
+            sendBroadcast = false;
+            broadcastUdp.Close();
+            listenUdp.Close();
         }
     }
 

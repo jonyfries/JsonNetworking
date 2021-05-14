@@ -11,6 +11,7 @@ namespace JsonNetworking
         public const int BROADCAST_PORT = 23938;
         public const int BROADCAST_RESPONSE_PORT = 23939;
         public const int CONNECTION_PORT = 23940;
+        public static int SOCKET_TIMEOUT = 60000;
 
         public const string EOF = "<~END OF NETWORK MESSAGE~>";
         public static readonly Encoding MESSAGE_ENCODING = Encoding.UTF32;
