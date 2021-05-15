@@ -11,8 +11,8 @@ namespace JsonNetworking
 {
     public class NetworkDiscovery_Listener
     {
-        public event MessageDelegate MessageSent;
-        public event MessageDelegate MessageReceived;
+        public event MessageDelegate OnMessageSent;
+        public event MessageDelegate OnMessageReceived;
 
         public bool listenForBroadcast = false;
 
@@ -45,7 +45,7 @@ namespace JsonNetworking
 
                 NetworkMessage clientMessage = NetworkMessage.Deserialize(messageJson);
                 clientMessage.SenderIp = ip.Address.ToString();
-                MessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
+                OnMessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
 
                 if (clientMessage.IsMessageType(NetworkMessage.ServerSearch))
                 {
@@ -55,7 +55,7 @@ namespace JsonNetworking
                     client.Connect(ep);
                     client.Send(bytes, bytes.Length);
 
-                    MessageSent?.Invoke(this, new MessageEventArgs(serverData));
+                    OnMessageSent?.Invoke(this, new MessageEventArgs(serverData));
                 }
             }
         }
