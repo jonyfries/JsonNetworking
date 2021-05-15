@@ -187,6 +187,18 @@ namespace JsonNetworking
             ClientInfo = clientInfo;
         }
 
+        public void ConnectToServer(string serverIpAddress)
+        {
+            if (IPAddress.TryParse(serverIpAddress, out IPAddress serverIp))
+            {
+                ConnectToServer(serverIp);
+            }
+            else
+            {
+                throw new ArgumentException("String provided is not a valid IP Address.", "serverIpAddress");
+            }
+        }
+
         public void ConnectToServer(IPAddress serverIp)
         {
             IPEndPoint remoteEP = new IPEndPoint(serverIp, Constants.CONNECTION_PORT);
