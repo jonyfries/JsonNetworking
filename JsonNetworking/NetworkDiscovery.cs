@@ -11,8 +11,8 @@ namespace JsonNetworking
 {
     public class NetworkDiscovery_Listener
     {
-        public event MessageDelegate MessageSent;
-        public event MessageDelegate MessageReceived;
+        public event MessageDelegate OnMessageSent;
+        public event MessageDelegate OnMessageReceived;
 
         public bool listenForBroadcast = false;
 
@@ -45,7 +45,7 @@ namespace JsonNetworking
 
                 NetworkMessage clientMessage = NetworkMessage.Deserialize(messageJson);
                 clientMessage.SenderIp = ip.Address.ToString();
-                MessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
+                OnMessageReceived?.Invoke(this, new MessageEventArgs(clientMessage));
 
                 if (clientMessage.IsMessageType(NetworkMessage.ServerSearch))
                 {
@@ -55,7 +55,7 @@ namespace JsonNetworking
                     client.Connect(ep);
                     client.Send(bytes, bytes.Length);
 
-                    MessageSent?.Invoke(this, new MessageEventArgs(serverData));
+                    OnMessageSent?.Invoke(this, new MessageEventArgs(serverData));
                 }
             }
         }
@@ -63,8 +63,8 @@ namespace JsonNetworking
 
     public class NetworkDiscovery_Sender
     {
-        public event MessageDelegate MessageSent;
-        public event MessageDelegate MessageReceived;
+        public event MessageDelegate OnMessageSent;
+        public event MessageDelegate OnMessageReceived;
 
         UdpClient broadcastUdp;
         UdpClient listenUdp;
@@ -99,7 +99,7 @@ namespace JsonNetworking
                 var data = broadcastMessage.ToBytes();
                 broadcastUdp.Send(data, data.Length, IPAddress.Broadcast.ToString(), Constants.BROADCAST_PORT);
 
-                MessageSent?.Invoke(this, new MessageEventArgs(broadcastMessage));
+                OnMessageSent?.Invoke(this, new MessageEventArgs(broadcastMessage));
 
                 Thread.Sleep(BroadcastPause);
             }
@@ -128,13 +128,13 @@ namespace JsonNetworking
 
                 NetworkMessage serverMessage = NetworkMessage.Deserialize(messageJson);
                 serverMessage.SenderIp = ip.Address.ToString();
-                MessageReceived?.Invoke(this, new MessageEventArgs(serverMessage));
+                OnMessageReceived?.Invoke(this, new MessageEventArgs(serverMessage));
             }
         }
 
         private void MaintainServerList()
         {
-            MessageReceived += NetworkDiscovery_Sender_MessageReceived;
+            OnMessageReceived += NetworkDiscovery_Sender_MessageReceived;
             while (sendBroadcast)
             {
                 lock (lockObject)
@@ -151,7 +151,7 @@ namespace JsonNetworking
                 Thread.Sleep((int)BroadcastPause.TotalMilliseconds / 2);
             }
             activeServers.Clear();
-            MessageReceived -= NetworkDiscovery_Sender_MessageReceived;
+            OnMessageReceived -= NetworkDiscovery_Sender_MessageReceived;
         }
 
         private void NetworkDiscovery_Sender_MessageReceived(object search, MessageEventArgs message)
